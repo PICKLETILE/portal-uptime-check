@@ -1,0 +1,36 @@
+name: Portal uptime
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+    inputs:
+      test_alert:
+        description: "Send a test direct message and stop (no real check)"
+        type: boolean
+        default: false
+
+# issues: write is for the one "PORTAL DOWN" issue that remembers whether an alert is open.
+permissions:
+  contents: read
+  issues: write
+
+# Never two checks at once; a run that waits out a restart can take up to 4 minutes.
+concurrency:
+  group: portal-uptime
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Check the Portal
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_USER_ID: ${{ secrets.SLACK_USER_ID }}
+          TEST_ALERT: ${{ inputs.test_alert }}
+        run: bash ./check.sh
